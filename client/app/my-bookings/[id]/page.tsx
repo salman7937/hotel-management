@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Navbar } from "../../components/layout/Navbar";
@@ -27,6 +27,20 @@ import {
 } from "lucide-react";
 
 export default function BookingDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-950">
+          <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <BookingDetailContent />
+    </Suspense>
+  );
+}
+
+function BookingDetailContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const bookingId = params?.id as string;

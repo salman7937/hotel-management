@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { Suspense, useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Navbar } from "../components/layout/Navbar";
@@ -13,6 +13,20 @@ const MAX_ATTEMPTS = 15;
 const POLL_INTERVAL_MS = 2000;
 
 export default function BookingConfirmedPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-950">
+          <Loader2 className="w-12 h-12 text-amber-400 animate-spin" />
+        </div>
+      }
+    >
+      <BookingConfirmedContent />
+    </Suspense>
+  );
+}
+
+function BookingConfirmedContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const sessionId = searchParams?.get("session_id");
