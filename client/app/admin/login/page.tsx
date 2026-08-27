@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAppDispatch } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { setCredentials } from "../../store/slices/authSlice";
 import { loginApi } from "../../api/authApi";
 import { Button } from "../../components/common/Button";
@@ -13,11 +13,18 @@ import { Mail, Lock, ShieldCheck, Hotel, AlertCircle, ArrowLeft } from "lucide-r
 export default function AdminLoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { isAuthenticated, user, isLoading } = useAppSelector((state) => state.auth);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user?.role === "staff") {
+      router.replace("/admin/dashboard");
+    }
+  }, [isLoading, isAuthenticated, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

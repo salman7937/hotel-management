@@ -24,16 +24,24 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// A 401 from these endpoints means "bad/missing credentials", never "expired
+// access token" — so we must NOT try to silently refresh (that would surface a
+// misleading "refresh token" error instead of "Invalid email or password").
+const NO_REFRESH_PATHS = ["/auth/login", "/auth/register", "/auth/refresh"];
+
 // Response Interceptor: Handle 401 & Silent Refresh Token
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    // Prevent infinite loop if refresh endpoint itself failed with 401
+    const url: string = originalRequest?.url || "";
+    const skipRefresh = NO_REFRESH_PATHS.some((p) => url.includes(p));
+
     if (
       error.response?.status === 401 &&
+      originalRequest &&
       !originalRequest._retry &&
-      !originalRequest.url?.includes("/auth/refresh")
+      !skipRefresh
     ) {
       originalRequest._retry = true;
       try {
@@ -50,13 +58,17 @@ axiosInstance.interceptors.response.use(
           }
           return axiosInstance(originalRequest);
         }
-      } catch (refreshError) {
+      } catch {
+        // Refresh failed — the session is genuinely gone.
         if (typeof window !== "undefined") {
           localStorage.removeItem("accessToken");
         }
-        return Promise.reject(refreshError);
       }
+      // Reject with the ORIGINAL error so callers see the real cause,
+      // not the internal refresh failure.
+      return Promise.reject(error);
     }
+
     return Promise.reject(error);
   }
 );
