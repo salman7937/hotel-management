@@ -10,6 +10,7 @@ import {
   getMyReservations,
   getReservationById,
   updateReservationStatus,
+  cancelOwnReservation,
 } from "../services/reservation.service.js";
 
 export const newReservation = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -42,10 +43,22 @@ export const getGuests = asyncHandler(async (req: Request, res: Response) => {
 
 export const getMyBookings = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!._id.toString();
-  const reservations = await getMyReservations(userId);
+  const reservations = await getMyReservations(userId, req.user!.email);
   res
     .status(200)
     .json(new ApiResponse(200, reservations, "Your reservations fetched successfully"));
+});
+
+export const cancelMyBooking = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const reservationId = req.params.id as string;
+  const reservation = await cancelOwnReservation(
+    reservationId,
+    req.user!._id.toString(),
+    req.user!.email
+  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, reservation, "Booking cancelled successfully"));
 });
 
 export const getSingleReservation = asyncHandler(
@@ -58,8 +71,10 @@ export const getSingleReservation = asyncHandler(
       const guestId = reservation.guest
         ? ((reservation.guest as any)._id || reservation.guest).toString()
         : null;
+      const ownsById = guestId === req.user._id.toString();
+      const ownsByEmail = reservation.email.toLowerCase() === req.user.email.toLowerCase();
 
-      if (guestId !== req.user._id.toString()) {
+      if (!ownsById && !ownsByEmail) {
         throw new ApiError(403, "Access denied. You can only view your own bookings.");
       }
     }

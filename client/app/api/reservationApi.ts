@@ -41,3 +41,8 @@ export const updateReservationStatusApi = async (id: string, status: string) => 
   const response = await axiosInstance.patch(`/reservations/${id}/status`, { status });
   return response.data;
 };
+
+export const cancelMyBookingApi = async (id: string) => {
+  const response = await axiosInstance.patch(`/reservations/${id}/cancel`);
+  return response.data;
+};

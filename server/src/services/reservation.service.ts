@@ -38,6 +38,29 @@ export const isRoomAvailable = async (
 };
 
 /**
+ * Race-condition guard: MongoDB has no cross-document lock, so two requests can
+ * both pass isRoomAvailable() and both insert. Immediately after inserting we
+ * re-check for an *earlier* overlapping reservation on the same room; if one
+ * exists, this reservation lost the race — we roll it back and report it.
+ */
+const rollbackIfLostBookingRace = async (reservation: IReservation): Promise<boolean> => {
+  const earlierConflict = await Reservation.findOne({
+    _id: { $ne: reservation._id },
+    room: reservation.room,
+    status: { $ne: "Cancelled" },
+    checkInDate: { $lt: reservation.checkOutDate },
+    checkOutDate: { $gt: reservation.checkInDate },
+    createdAt: { $lte: reservation.createdAt },
+  });
+
+  if (earlierConflict) {
+    await Reservation.deleteOne({ _id: reservation._id });
+    return true;
+  }
+  return false;
+};
+
+/**
  * Generate unique GrandStay Booking ID (e.g. GS-849201)
  */
 const generateBookingId = async (): Promise<string> => {
@@ -89,6 +112,20 @@ const validateAndPriceReservation = async (input: {
   const checkIn = new Date(input.checkInDate);
   const checkOut = new Date(input.checkOutDate);
 
+  if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime())) {
+    throw new ApiError(400, "Invalid check-in or check-out date.");
+  }
+
+  if (checkOut <= checkIn) {
+    throw new ApiError(400, "Check-out date must be strictly after check-in date.");
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (checkIn < today) {
+    throw new ApiError(400, "Check-in date cannot be in the past.");
+  }
+
   const available = await isRoomAvailable(input.room, checkIn, checkOut);
   if (!available) {
     throw new ApiError(
@@ -128,6 +165,14 @@ export const createReservation = async (
     paymentMethod: input.paymentMethod,
     paymentStatus: "unpaid",
   });
+
+  const lostRace = await rollbackIfLostBookingRace(reservation);
+  if (lostRace) {
+    throw new ApiError(
+      409,
+      `Room '${room.roomNumber}' was just reserved by another guest for the selected dates. Please choose different dates or another room.`
+    );
+  }
 
   const populatedReservation = await (await reservation.populate("room")).populate(
     "guest",
@@ -194,23 +239,41 @@ export const finalizeOnlinePayment = async (
   const { room, checkIn, checkOut, totalAmount } = pricing;
   const bookingId = await generateBookingId();
 
-  const reservation = await Reservation.create({
-    bookingId,
-    guest: metadata.userId ? new mongoose.Types.ObjectId(metadata.userId) : undefined,
-    guestName: metadata.guestName,
-    email: metadata.email.toLowerCase(),
-    phone: metadata.phone,
-    room: room._id,
-    checkInDate: checkIn,
-    checkOutDate: checkOut,
-    numberOfGuests: metadata.numberOfGuests,
-    specialRequests: metadata.specialRequests || "",
-    totalAmount,
-    status: "Confirmed",
-    paymentMethod: "online",
-    paymentStatus: "paid",
-    stripeSessionId,
-  });
+  let reservation: IReservation;
+  try {
+    reservation = await Reservation.create({
+      bookingId,
+      guest: metadata.userId ? new mongoose.Types.ObjectId(metadata.userId) : undefined,
+      guestName: metadata.guestName,
+      email: metadata.email.toLowerCase(),
+      phone: metadata.phone,
+      room: room._id,
+      checkInDate: checkIn,
+      checkOutDate: checkOut,
+      numberOfGuests: metadata.numberOfGuests,
+      specialRequests: metadata.specialRequests || "",
+      totalAmount,
+      status: "Confirmed",
+      paymentMethod: "online",
+      paymentStatus: "paid",
+      stripeSessionId,
+    });
+  } catch (err: any) {
+    // Duplicate stripeSessionId — a concurrent webhook delivery already created it.
+    if (err?.code === 11000) {
+      const existingDup = await Reservation.findOne({ stripeSessionId });
+      if (existingDup) {
+        const populatedDup = await (await existingDup.populate("room")).populate("guest", "name email role");
+        return { reservation: populatedDup, roomStillAvailable: true };
+      }
+    }
+    throw err;
+  }
+
+  const lostRace = await rollbackIfLostBookingRace(reservation);
+  if (lostRace) {
+    return { reservation: null, roomStillAvailable: false };
+  }
 
   const populatedReservation = await (await reservation.populate("room")).populate(
     "guest",
@@ -221,6 +284,9 @@ export const finalizeOnlinePayment = async (
 
   return { reservation: populatedReservation, roomStillAvailable: true };
 };
+
+/** Escape user input before using it inside a RegExp (prevents ReDoS / injection). */
+const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export interface ReservationQueryFilters {
   status?: string;
@@ -240,7 +306,7 @@ export const getAllReservations = async (filters: ReservationQueryFilters = {}) 
   }
 
   if (filters.search) {
-    const searchRegex = new RegExp(filters.search, "i");
+    const searchRegex = new RegExp(escapeRegex(filters.search), "i");
     query.$or = [
       { bookingId: searchRegex },
       { guestName: searchRegex },
@@ -262,7 +328,7 @@ export interface GuestQueryFilters {
 export const getAllGuests = async (filters: GuestQueryFilters = {}) => {
   const match: any = {};
   if (filters.search) {
-    const searchRegex = new RegExp(filters.search, "i");
+    const searchRegex = new RegExp(escapeRegex(filters.search), "i");
     match.$or = [
       { guestName: searchRegex },
       { email: searchRegex },
@@ -289,9 +355,14 @@ export const getAllGuests = async (filters: GuestQueryFilters = {}) => {
   ]);
 };
 
-export const getMyReservations = async (userId: string) => {
+export const getMyReservations = async (userId: string, email?: string) => {
   const userObjectId = new mongoose.Types.ObjectId(userId);
-  return Reservation.find({ guest: userObjectId })
+  const or: any[] = [{ guest: userObjectId }];
+  if (email) {
+    // Guest-checkout bookings made before the account existed are linked only by email.
+    or.push({ email: email.toLowerCase() });
+  }
+  return Reservation.find({ $or: or })
     .populate("room")
     .sort({ createdAt: -1 });
 };
@@ -306,6 +377,43 @@ export const getReservationById = async (reservationId: string): Promise<IReserv
   }
 
   return reservation;
+};
+
+/**
+ * Customer-initiated cancellation of their own booking.
+ * Allowed only while the booking is still Pending or Confirmed.
+ */
+export const cancelOwnReservation = async (
+  reservationId: string,
+  userId: string,
+  email?: string
+): Promise<IReservation> => {
+  const reservation = await Reservation.findById(reservationId);
+  if (!reservation) {
+    throw new ApiError(404, `Reservation with ID ${reservationId} not found.`);
+  }
+
+  const ownsById = reservation.guest?.toString() === userId;
+  const ownsByEmail = !!email && reservation.email.toLowerCase() === email.toLowerCase();
+  if (!ownsById && !ownsByEmail) {
+    throw new ApiError(403, "Access denied. You can only cancel your own bookings.");
+  }
+
+  if (reservation.status === "Cancelled") {
+    return reservation.populate("room");
+  }
+
+  if (!["Pending", "Confirmed"].includes(reservation.status)) {
+    throw new ApiError(
+      400,
+      `This booking can no longer be cancelled online (current status: '${reservation.status}'). Please contact the front desk.`
+    );
+  }
+
+  reservation.status = "Cancelled";
+  await reservation.save();
+
+  return reservation.populate("room");
 };
 
 /**

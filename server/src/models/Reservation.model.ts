@@ -102,6 +102,8 @@ const reservationSchema = new Schema<IReservation>(
     },
     stripeSessionId: {
       type: String,
+      unique: true,
+      sparse: true,
     },
   },
   {

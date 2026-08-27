@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User, IUser, UserRole } from "../models/User.model.js";
+import { config } from "../config/env.js";
 
 export interface AuthRequest extends Request {
   user?: IUser;
@@ -23,8 +24,7 @@ export const verifyToken = asyncHandler(async (req: AuthRequest, res: Response, 
   }
 
   try {
-    const secret = process.env.JWT_ACCESS_SECRET || "grandstay_access_secret_super_secure_key_2026";
-    const decoded = jwt.verify(token, secret) as { id: string; email: string; role: UserRole };
+    const decoded = jwt.verify(token, config.jwtAccessSecret) as { id: string; email: string; role: UserRole };
 
     const user = await User.findById(decoded.id).select("-password");
     if (!user) {
@@ -61,8 +61,7 @@ export const optionalVerifyToken = asyncHandler(
     }
 
     try {
-      const secret = process.env.JWT_ACCESS_SECRET || "grandstay_access_secret_super_secure_key_2026";
-      const decoded = jwt.verify(token, secret) as { id: string; email: string; role: UserRole };
+      const decoded = jwt.verify(token, config.jwtAccessSecret) as { id: string; email: string; role: UserRole };
       const user = await User.findById(decoded.id).select("-password");
       if (user && user.isActive) {
         req.user = user;

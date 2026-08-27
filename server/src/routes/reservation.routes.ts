@@ -6,6 +6,7 @@ import {
   getMyBookings,
   getSingleReservation,
   updateStatus,
+  cancelMyBooking,
 } from "../controllers/reservation.controller.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { verifyToken, optionalVerifyToken } from "../middlewares/auth.middleware.js";
@@ -22,6 +23,9 @@ router.post("/", optionalVerifyToken, validate(createReservationSchema), newRese
 
 // Customer personal bookings
 router.get("/my", verifyToken, getMyBookings);
+
+// Customer cancels their own booking (only while Pending/Confirmed)
+router.patch("/:id/cancel", verifyToken, cancelMyBooking);
 
 // Admin list all reservations
 router.get("/", verifyToken, authorizeRoles("staff"), getReservations);

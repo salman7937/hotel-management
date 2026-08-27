@@ -266,12 +266,12 @@ export default function Home() {
             </div>
           ) : featuredRooms.length === 0 ? (
             <div className="glass-card p-10 rounded-2xl text-center border border-slate-800 my-4">
-              <p className="text-slate-300 font-semibold mb-2">No Rooms Available Yet</p>
+              <p className="text-slate-300 font-semibold mb-2">No rooms available at the moment</p>
               <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">
-                Rooms added by the administrator in the Admin Portal will appear here live.
+                Our rooms are currently being updated. Please check back soon or contact our front desk for assistance with your stay.
               </p>
-              <Link href="/admin/rooms">
-                <Button variant="gold" size="sm">Go to Admin Portal to Add Rooms</Button>
+              <Link href="/rooms">
+                <Button variant="gold" size="sm">Browse All Rooms</Button>
               </Link>
             </div>
           ) : (
