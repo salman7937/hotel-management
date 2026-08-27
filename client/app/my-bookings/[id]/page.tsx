@@ -7,7 +7,7 @@ import { Navbar } from "../../components/layout/Navbar";
 import { Footer } from "../../components/layout/Footer";
 import { Badge } from "../../components/common/Badge";
 import { Button } from "../../components/common/Button";
-import { getReservationByIdApi } from "../../api/reservationApi";
+import { getReservationByIdApi, cancelMyBookingApi } from "../../api/reservationApi";
 import { ReservationData } from "../../store/slices/reservationsSlice";
 import {
   ArrowLeft,
@@ -49,6 +49,27 @@ function BookingDetailContent() {
   const [booking, setBooking] = useState<ReservationData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<boolean>(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  const handleCancel = async () => {
+    if (!booking) return;
+    if (!window.confirm("Are you sure you want to cancel this booking? This cannot be undone.")) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const response = await cancelMyBookingApi(booking._id);
+      if (response.success && response.data) {
+        setBooking(response.data);
+      } else {
+        setCancelError(response.message || "Failed to cancel booking.");
+      }
+    } catch (err: any) {
+      setCancelError(err.response?.data?.message || "Failed to cancel booking.");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -211,6 +232,25 @@ function BookingDetailContent() {
                   <MessageSquare className="w-3.5 h-3.5" /> Special Requests
                 </p>
                 <p className="text-sm text-slate-300">{booking.specialRequests}</p>
+              </div>
+            )}
+
+            {(booking.status === "Pending" || booking.status === "Confirmed") && (
+              <div className="pt-2 space-y-2">
+                {cancelError && (
+                  <p className="text-rose-400 text-sm text-center">{cancelError}</p>
+                )}
+                <Button
+                  variant="outline"
+                  className="w-full border-rose-500/40 text-rose-400 hover:bg-rose-500/10"
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                >
+                  {cancelling ? "Cancelling..." : "Cancel This Booking"}
+                </Button>
+                <p className="text-[11px] text-slate-500 text-center">
+                  Free cancellation while the booking is pending or confirmed. Contact the front desk for later changes.
+                </p>
               </div>
             )}
 

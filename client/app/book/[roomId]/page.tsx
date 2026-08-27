@@ -68,6 +68,8 @@ function BookingCheckoutContent() {
   const [specialRequests, setSpecialRequests] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"online" | "cash">("cash");
 
+  const todayStr = new Date().toISOString().split("T")[0];
+
   useEffect(() => {
     if (user) {
       if (user.name) setGuestName(user.name);
@@ -100,8 +102,11 @@ function BookingCheckoutContent() {
     if (!checkInDate || !checkOutDate || !room) return null;
     const start = new Date(checkInDate);
     const end = new Date(checkOutDate);
-    if (end <= start) return null;
-    const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return null;
+    const nights = Math.max(
+      1,
+      Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    );
     return {
       nights,
       total: nights * room.pricePerNight,
@@ -121,6 +126,11 @@ function BookingCheckoutContent() {
 
     if (new Date(checkOutDate) <= new Date(checkInDate)) {
       setErrorMsg("Check-out date must be strictly after Check-in date.");
+      return;
+    }
+
+    if (checkInDate < todayStr) {
+      setErrorMsg("Check-in date cannot be in the past.");
       return;
     }
 
@@ -330,8 +340,12 @@ function BookingCheckoutContent() {
                       <input
                         type="date"
                         required
+                        min={todayStr}
                         value={checkInDate}
-                        onChange={(e) => setCheckInDate(e.target.value)}
+                        onChange={(e) => {
+                          setCheckInDate(e.target.value);
+                          if (checkOutDate && checkOutDate <= e.target.value) setCheckOutDate("");
+                        }}
                         className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
                       />
                     </div>
@@ -342,7 +356,7 @@ function BookingCheckoutContent() {
                       <input
                         type="date"
                         required
-                        min={checkInDate || undefined}
+                        min={checkInDate || todayStr}
                         value={checkOutDate}
                         onChange={(e) => setCheckOutDate(e.target.value)}
                         className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"

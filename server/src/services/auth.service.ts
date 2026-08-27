@@ -3,6 +3,7 @@ import { User, IUser } from "../models/User.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { RegisterInput, LoginInput } from "../validators/auth.validator.js";
 import { generateAccessToken, generateRefreshToken, TokenPayload } from "../utils/generateToken.js";
+import { config } from "../config/env.js";
 
 export const registerUser = async (input: RegisterInput) => {
   const existingUser = await User.findOne({ email: input.email.toLowerCase() });
@@ -69,8 +70,7 @@ export const refreshUserToken = async (refreshToken: string) => {
   }
 
   try {
-    const secret = process.env.JWT_REFRESH_SECRET || "default_refresh_secret";
-    const decoded = jwt.verify(refreshToken, secret) as TokenPayload;
+    const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret) as TokenPayload;
 
     const user = await User.findById(decoded.id);
     if (!user || !user.isActive) {

@@ -41,6 +41,14 @@ export const getAllRooms = async (filters: RoomQueryFilters = {}) => {
     const checkIn = new Date(filters.checkInDate);
     const checkOut = new Date(filters.checkOutDate);
 
+    if (
+      Number.isNaN(checkIn.getTime()) ||
+      Number.isNaN(checkOut.getTime()) ||
+      checkOut <= checkIn
+    ) {
+      throw new ApiError(400, "Invalid check-in / check-out date range.");
+    }
+
     const conflictingReservations = await Reservation.find({
       status: { $ne: "Cancelled" },
       checkInDate: { $lt: checkOut },

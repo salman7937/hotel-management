@@ -36,6 +36,8 @@ export default function RoomsPage() {
   const [checkInDate, setCheckInDate] = useState<string>("");
   const [checkOutDate, setCheckOutDate] = useState<string>("");
 
+  const todayStr = new Date().toISOString().split("T")[0];
+
   const fetchRoomsData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -45,8 +47,11 @@ export default function RoomsPage() {
       if (minPrice) params.minPrice = Number(minPrice);
       if (maxPrice) params.maxPrice = Number(maxPrice);
       if (guests) params.guests = Number(guests);
-      if (checkInDate) params.checkInDate = checkInDate;
-      if (checkOutDate) params.checkOutDate = checkOutDate;
+      // Only send a date range when both dates are set and valid (checkout after checkin)
+      if (checkInDate && checkOutDate && checkOutDate > checkInDate) {
+        params.checkInDate = checkInDate;
+        params.checkOutDate = checkOutDate;
+      }
 
       const response = await getRoomsApi(params);
       if (response.success && Array.isArray(response.data)) {
@@ -143,8 +148,12 @@ export default function RoomsPage() {
                   </label>
                   <input
                     type="date"
+                    min={todayStr}
                     value={checkInDate}
-                    onChange={(e) => setCheckInDate(e.target.value)}
+                    onChange={(e) => {
+                      setCheckInDate(e.target.value);
+                      if (checkOutDate && checkOutDate <= e.target.value) setCheckOutDate("");
+                    }}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
                   />
                 </div>
@@ -155,6 +164,7 @@ export default function RoomsPage() {
                   </label>
                   <input
                     type="date"
+                    min={checkInDate || todayStr}
                     value={checkOutDate}
                     onChange={(e) => setCheckOutDate(e.target.value)}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500"

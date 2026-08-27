@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { Response } from "express";
+import { config } from "../config/env.js";
 
 export interface TokenPayload {
   id: string;
@@ -8,15 +9,15 @@ export interface TokenPayload {
 }
 
 export const generateAccessToken = (payload: TokenPayload): string => {
-  const secret = process.env.JWT_ACCESS_SECRET || "default_access_secret";
-  const expiresIn = process.env.JWT_ACCESS_EXPIRES_IN || "15m";
-  return jwt.sign(payload, secret, { expiresIn: expiresIn as any });
+  return jwt.sign(payload, config.jwtAccessSecret, {
+    expiresIn: config.jwtAccessExpiresIn as any,
+  });
 };
 
 export const generateRefreshToken = (payload: TokenPayload): string => {
-  const secret = process.env.JWT_REFRESH_SECRET || "default_refresh_secret";
-  const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
-  return jwt.sign(payload, secret, { expiresIn: expiresIn as any });
+  return jwt.sign(payload, config.jwtRefreshSecret, {
+    expiresIn: config.jwtRefreshExpiresIn as any,
+  });
 };
 
 export const setRefreshTokenCookie = (res: Response, refreshToken: string): void => {
