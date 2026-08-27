@@ -11,6 +11,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   rightIcon?: React.ReactNode;
 }
 
+/**
+ * Modern Grand Hotel — a button is a stamped rectangle.
+ * Flat fill, no radius, no shadow, no scale. The label is set in the
+ * mono face, uppercase, like something pressed into metal.
+ */
 export const Button: React.FC<ButtonProps> = ({
   children,
   variant = "primary",
@@ -22,35 +27,41 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles =
-    "inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none rounded-xl disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm active:scale-[0.98]";
+  const base =
+    "inline-flex items-center justify-center font-mono uppercase tracking-wider " +
+    "transition-colors duration-150 focus:outline-none focus-visible:outline-2 " +
+    "focus-visible:outline-offset-2 focus-visible:outline-pine " +
+    "disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border";
 
-  const variantStyles = {
-    primary:
-      "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-900/20 hover:shadow-lg hover:shadow-amber-600/30",
-    gold:
-      "bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-white shadow-amber-900/30 hover:shadow-amber-500/40",
-    secondary: "bg-slate-800 hover:bg-slate-900 text-slate-100 border border-slate-700",
-    outline:
-      "border border-amber-600/40 text-amber-500 hover:bg-amber-500/10 hover:border-amber-500",
-    danger: "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-900/20",
-    ghost: "bg-transparent hover:bg-slate-800/60 text-slate-300 hover:text-white shadow-none",
+  const variants: Record<string, string> = {
+    // Primary action — solid pine plate
+    primary: "bg-pine text-paper border-pine hover:bg-pine-deep hover:border-pine-deep",
+    gold: "bg-pine text-paper border-pine hover:bg-pine-deep hover:border-pine-deep",
+    // Secondary — outline on paper
+    secondary: "bg-transparent text-pine border-pine hover:bg-pine hover:text-paper",
+    outline: "bg-transparent text-pine border-pine hover:bg-pine hover:text-paper",
+    // Destructive
+    danger: "bg-transparent text-stop border-stop hover:bg-stop hover:text-paper",
+    // Ghost — label only, animated underline, no box
+    ghost:
+      "bg-transparent border-transparent text-ink underline decoration-rule " +
+      "underline-offset-4 hover:decoration-pine hover:text-pine",
   };
 
-  const sizeStyles = {
-    sm: "px-3 py-1.5 text-xs font-semibold gap-1.5",
-    md: "px-4 py-2.5 text-sm font-semibold gap-2",
-    lg: "px-6 py-3.5 text-base font-bold gap-2.5",
+  const sizes: Record<string, string> = {
+    sm: "px-3 py-1.5 text-2xs gap-1.5",
+    md: "px-4 py-2.5 text-xs gap-2",
+    lg: "px-6 py-3.5 text-sm gap-2.5",
   };
 
   return (
     <button
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >
       {isLoading ? (
-        <Loader2 className="w-4 h-4 animate-spin text-current mr-2" />
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
       ) : (
         leftIcon && <span className="inline-flex">{leftIcon}</span>
       )}

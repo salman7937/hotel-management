@@ -24,36 +24,43 @@ export interface BadgeProps {
   className?: string;
 }
 
+/**
+ * Modern Grand Hotel — a label, not a pill.
+ * Set in the mono face, uppercase, no background. State is carried by the
+ * text colour: pine = good, brass = in-progress, rust = stopped.
+ */
 export const Badge: React.FC<BadgeProps> = ({
   variant = "default",
   size = "md",
   children,
   className = "",
 }) => {
-  const styles: Record<string, string> = {
-    Pending: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-    Confirmed: "bg-blue-500/10 text-blue-400 border-blue-500/30",
-    "Checked-in": "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-    "Checked-out": "bg-slate-500/10 text-slate-400 border-slate-500/30",
-    Cancelled: "bg-rose-500/10 text-rose-400 border-rose-500/30",
-    Available: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-    Maintenance: "bg-orange-500/10 text-orange-400 border-orange-500/30",
-    Deactivated: "bg-rose-500/10 text-rose-400 border-rose-500/30",
-    gold: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-    success: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-    warning: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-    danger: "bg-rose-500/10 text-rose-400 border-rose-500/30",
-    default: "bg-slate-800/80 text-slate-300 border-slate-700/80",
+  const tone: Record<string, string> = {
+    Confirmed: "text-pine",
+    Available: "text-pine",
+    "Checked-in": "text-pine",
+    success: "text-pine",
+
+    Pending: "text-brass",
+    Maintenance: "text-brass",
+    warning: "text-brass",
+    gold: "text-brass",
+    "Checked-out": "text-muted",
+    default: "text-muted",
+
+    Cancelled: "text-stop",
+    Deactivated: "text-stop",
+    danger: "text-stop",
   };
 
-  const selectedStyle = styles[variant] || styles.default;
-  const sizeStyle = size === "sm" ? "px-2.5 py-0.5 text-xs font-semibold" : "px-3 py-1 text-xs font-bold";
+  const color = tone[variant] || tone.default;
+  const sizeStyle = size === "sm" ? "text-2xs" : "text-xs";
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border shadow-sm backdrop-blur-md uppercase tracking-wider ${selectedStyle} ${sizeStyle} ${className}`}
+      className={`inline-flex items-center gap-1.5 font-mono uppercase tracking-widest ${color} ${sizeStyle} ${className}`}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
+      <span aria-hidden className="inline-block w-1 h-1 bg-current" />
       {children || variant}
     </span>
   );

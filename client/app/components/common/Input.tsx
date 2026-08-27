@@ -10,6 +10,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   rightIcon?: React.ReactNode;
 }
 
+/**
+ * Modern Grand Hotel — an underline field, like a form on hotel stationery.
+ * No box, no fill: a single baseline rule that turns pine and thickens on focus.
+ */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, leftIcon, rightIcon, className = "", id, ...props }, ref) => {
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
@@ -17,36 +21,41 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={inputId} className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+          <label
+            htmlFor={inputId}
+            className="font-mono text-2xs uppercase tracking-widest text-muted"
+          >
             {label}
           </label>
         )}
         <div className="relative flex items-center">
           {leftIcon && (
-            <div className="absolute left-3.5 text-slate-400 pointer-events-none flex items-center justify-center">
+            <div className="absolute left-0 text-muted pointer-events-none flex items-center">
               {leftIcon}
             </div>
           )}
           <input
             ref={ref}
             id={inputId}
-            className={`w-full bg-slate-900/80 border text-slate-100 placeholder-slate-500 text-sm rounded-xl py-2.5 transition-all duration-200 focus:outline-none focus:ring-2 ${
-              leftIcon ? "pl-10" : "pl-3.5"
-            } ${rightIcon ? "pr-10" : "pr-3.5"} ${
+            className={`w-full bg-transparent text-ink placeholder-muted text-base py-2 border-0 border-b transition-colors duration-150 focus:outline-none focus:border-b-2 ${
+              leftIcon ? "pl-6" : "pl-0"
+            } ${rightIcon ? "pr-6" : "pr-0"} ${
               error
-                ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20"
-                : "border-slate-700/80 hover:border-slate-600 focus:border-amber-500 focus:ring-amber-500/20"
+                ? "border-stop focus:border-stop"
+                : "border-rule hover:border-muted focus:border-pine"
             } ${className}`}
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3.5 text-slate-400 pointer-events-none flex items-center justify-center">
+            <div className="absolute right-0 text-muted pointer-events-none flex items-center">
               {rightIcon}
             </div>
           )}
         </div>
-        {error && <p className="text-xs text-rose-400 font-medium mt-0.5">{error}</p>}
-        {!error && helperText && <p className="text-xs text-slate-400 mt-0.5">{helperText}</p>}
+        {error && <p className="font-mono text-2xs text-stop mt-0.5">{error}</p>}
+        {!error && helperText && (
+          <p className="font-mono text-2xs text-muted mt-0.5">{helperText}</p>
+        )}
       </div>
     );
   }
