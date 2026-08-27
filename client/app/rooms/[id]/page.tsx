@@ -6,22 +6,15 @@ import { useParams, useRouter } from "next/navigation";
 import { Navbar } from "../../components/layout/Navbar";
 import { Footer } from "../../components/layout/Footer";
 import { Button } from "../../components/common/Button";
-import { Badge } from "../../components/common/Badge";
 import { getRoomByIdApi } from "../../api/roomApi";
 import { RoomData } from "../../store/slices/roomsSlice";
-import {
-  BedDouble,
-  Users,
-  Wifi,
-  Coffee,
-  CheckCircle2,
-  Calendar,
-  ArrowLeft,
-  Sparkles,
-  ShieldCheck,
-  Star,
-  Info,
-} from "lucide-react";
+
+const ROOM_FALLBACK =
+  "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80";
+
+const field =
+  "w-full bg-transparent text-ink border-0 border-b border-rule py-2 text-base " +
+  "focus:outline-none focus:border-b-2 focus:border-pine transition-colors";
 
 export default function RoomDetailsPage() {
   const params = useParams();
@@ -35,6 +28,8 @@ export default function RoomDetailsPage() {
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
   const [guests, setGuests] = useState<number>(1);
+
+  const todayStr = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -53,21 +48,19 @@ export default function RoomDetailsPage() {
         setLoading(false);
       }
     };
-
     fetchDetails();
   }, [roomId]);
 
-  // Calculate nights and total price
   const calculateTotal = () => {
     if (!checkIn || !checkOut || !room) return null;
     const start = new Date(checkIn);
     const end = new Date(checkOut);
-    if (end <= start) return null;
-    const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return {
-      nights,
-      total: nights * room.pricePerNight,
-    };
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return null;
+    const nights = Math.max(
+      1,
+      Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    );
+    return { nights, total: nights * room.pricePerNight };
   };
 
   const costBreakdown = calculateTotal();
@@ -92,208 +85,180 @@ export default function RoomDetailsPage() {
     router.push(`/book/${roomId}?${query.toString()}`);
   };
 
+  const images = room?.images?.length ? room.images : [ROOM_FALLBACK];
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="min-h-screen flex flex-col bg-paper text-ink">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Back Link */}
         <Link
           href="/rooms"
-          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-amber-400 mb-6 transition-colors"
+          className="font-mono text-2xs uppercase tracking-widest text-muted hover:text-pine transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Room Catalog
+          ← All rooms
         </Link>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mb-4" />
-            <p className="text-slate-400 text-sm">Loading room specifications...</p>
-          </div>
+          <p className="font-mono text-2xs uppercase tracking-widest text-muted py-16">
+            Loading room…
+          </p>
         ) : error || !room ? (
-          <div className="glass-panel p-10 rounded-2xl border border-rose-900/50 text-center my-10">
-            <Info className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">Room Not Found</h2>
-            <p className="text-slate-400 mb-6 text-sm">{error || "The requested room does not exist."}</p>
-            <Link href="/rooms">
-              <Button variant="gold">Browse All Rooms</Button>
+          <div className="py-16 max-w-md">
+            <h1 className="font-display font-medium text-3xl text-ink">Room not found.</h1>
+            <p className="mt-3 text-sm text-ink-soft">
+              {error || "The requested room does not exist."}
+            </p>
+            <Link href="/rooms" className="inline-block mt-5">
+              <Button variant="primary" size="sm">Browse all rooms</Button>
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            {/* Left Column: Images & Specs */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Gallery Image Header */}
-              <div className="relative rounded-3xl overflow-hidden border border-slate-800 h-96 sm:h-[450px]">
-                <img
-                  src={
-                    room.images[0] ||
-                    "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80"
-                  }
-                  alt={room.roomNumber}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <Badge variant="gold" size="md">
-                    Room {room.roomNumber}
-                  </Badge>
-                  <Badge variant="default" size="md" className="bg-slate-950/80 backdrop-blur-md">
-                    {room.roomType}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Title & Overview */}
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-x-14 gap-y-10">
+            {/* Left — photography + copy */}
+            <div className="flex flex-col gap-10">
               <div>
-                <div className="flex items-center justify-between gap-4 mb-3">
-                  <h1 className="text-3xl sm:text-4xl font-extrabold font-outfit text-white">
-                    {room.roomType} Suite - Room {room.roomNumber}
-                  </h1>
-                  <div className="text-right">
-                    <span className="text-3xl font-extrabold text-amber-400">${room.pricePerNight}</span>
-                    <span className="text-xs text-slate-400 block">per night</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-6 py-3 border-y border-slate-800 text-sm text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-amber-400" />
-                    <span>Capacity: {room.maxGuests} Guests</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <BedDouble className="w-4 h-4 text-amber-400" />
-                    <span>Bed: {room.bedType}</span>
-                  </div>
-                </div>
-
-                <p className="text-slate-300 text-base leading-relaxed mt-6">{room.description}</p>
-              </div>
-
-              {/* Facilities Section */}
-              <div>
-                <h3 className="text-xl font-bold text-white font-outfit mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-400" /> Room Amenities & Services
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {room.facilities.map((facility, idx) => (
-                    <div
-                      key={idx}
-                      className="glass-panel p-3.5 rounded-xl border border-slate-800 flex items-center gap-3 text-slate-200 text-sm"
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                      <span>{facility}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Reservation Booking Box */}
-            <div className="lg:col-span-1">
-              <div className="glass-panel p-6 rounded-3xl border border-slate-800 sticky top-28 space-y-6">
-                <div className="pb-4 border-b border-slate-800">
-                  <h3 className="text-xl font-bold text-white font-outfit mb-1">Reserve This Room</h3>
-                  <p className="text-xs text-slate-400">Select dates for live price calculation.</p>
-                </div>
-
-                {/* Already Reserved Date Ranges Banner */}
-                {room.reservedDates && room.reservedDates.length > 0 && (
-                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1">
-                    <p className="font-bold flex items-center gap-1.5 text-amber-400">
-                      <Calendar className="w-4 h-4" /> Unavailable Date Ranges:
-                    </p>
-                    <ul className="list-disc list-inside space-y-0.5 text-[11px] text-amber-200">
-                      {room.reservedDates.map((res: any, idx: number) => (
-                        <li key={idx}>
-                          {new Date(res.checkInDate).toLocaleDateString()} to {new Date(res.checkOutDate).toLocaleDateString()} ({res.status})
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Date Inputs */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-amber-400" /> Check-in Date
-                    </label>
-                    <input
-                      type="date"
-                      value={checkIn}
-                      onChange={(e) => setCheckIn(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-amber-400" /> Check-out Date
-                    </label>
-                    <input
-                      type="date"
-                      min={checkIn || undefined}
-                      value={checkOut}
-                      onChange={(e) => setCheckOut(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1 flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-amber-400" /> Number of Guests
-                    </label>
-                    <select
-                      value={guests}
-                      onChange={(e) => setGuests(Number(e.target.value))}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
-                    >
-                      {Array.from({ length: room.maxGuests }, (_, i) => i + 1).map((n) => (
-                        <option key={n} value={n}>
-                          {n} Guest{n > 1 ? "s" : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Cost Calculation Summary */}
-                {costBreakdown && (
-                  <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2">
-                    <div className="flex justify-between text-xs text-slate-400">
-                      <span>${room.pricePerNight} × {costBreakdown.nights} Night(s)</span>
-                      <span>${costBreakdown.total}</span>
-                    </div>
-                    <div className="pt-2 border-t border-slate-800 flex justify-between text-base font-bold text-white">
-                      <span>Total Price</span>
-                      <span className="text-amber-400">${costBreakdown.total}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Date Conflict Warning Banner */}
-                {isConflict && (
-                  <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold leading-relaxed">
-                    ⚠️ Room is already reserved for the selected dates. Please pick different check-in/check-out dates.
-                  </div>
-                )}
-
-                {/* Submit Action */}
-                <Button
-                  variant="gold"
-                  size="lg"
-                  className="w-full"
-                  disabled={isConflict}
-                  onClick={handleProceedBooking}
-                >
-                  {isConflict ? "Dates Unavailable" : "Proceed to Booking"}
-                </Button>
-
-                <p className="text-[11px] text-slate-500 text-center flex items-center justify-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Instant confirmation & double-booking protected
+                <p className="font-mono text-2xs uppercase tracking-[0.2em] text-brass mb-3">
+                  <span className="tabular">№ {room.roomNumber}</span> · {room.roomType}
+                </p>
+                <h1 className="font-display font-medium text-4xl sm:text-5xl leading-[0.98] text-ink">
+                  {room.roomType} Room
+                </h1>
+                <p className="mt-4 font-mono text-2xs uppercase tracking-widest text-muted">
+                  Sleeps <span className="tabular">{room.maxGuests}</span> · {room.bedType} bed ·{" "}
+                  <span className="tabular">${room.pricePerNight}</span> / night
+                </p>
+                <p className="mt-6 text-base text-ink-soft leading-relaxed max-w-prose">
+                  {room.description}
                 </p>
               </div>
+
+              <div className="flex flex-col gap-3">
+                {images.map((src, i) => (
+                  <figure key={i} className="m-0">
+                    <div className="aspect-[3/2] w-full overflow-hidden border border-rule bg-paper-2">
+                      <img
+                        src={src || ROOM_FALLBACK}
+                        alt={`Room ${room.roomNumber} — view ${i + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <figcaption className="mt-2 font-mono text-2xs uppercase tracking-widest text-muted">
+                      Room {room.roomNumber} · plate {i + 1} / {images.length}
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+
+              {room.facilities && room.facilities.length > 0 && (
+                <div>
+                  <p className="font-mono text-2xs uppercase tracking-[0.2em] text-brass mb-3">
+                    In the room
+                  </p>
+                  <p className="font-mono text-sm text-ink-soft leading-loose">
+                    {room.facilities.join("   ·   ")}
+                  </p>
+                </div>
+              )}
             </div>
+
+            {/* Right — reservation panel */}
+            <aside className="lg:sticky lg:top-20 self-start border border-rule bg-paper-2 p-6 flex flex-col gap-5">
+              <div className="border-b border-rule pb-4">
+                <p className="font-display text-3xl text-ink tabular">${room.pricePerNight}</p>
+                <p className="font-mono text-2xs uppercase tracking-widest text-muted mt-1">
+                  per night
+                </p>
+              </div>
+
+              {room.reservedDates && room.reservedDates.length > 0 && (
+                <div className="border-b border-rule pb-4">
+                  <p className="font-mono text-2xs uppercase tracking-widest text-brass mb-2">
+                    Unavailable
+                  </p>
+                  <ul className="flex flex-col gap-1 font-mono text-2xs text-ink-soft">
+                    {room.reservedDates.map((res: any, idx: number) => (
+                      <li key={idx} className="tabular">
+                        {new Date(res.checkInDate).toLocaleDateString("en-GB")} –{" "}
+                        {new Date(res.checkOutDate).toLocaleDateString("en-GB")}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <label className="flex flex-col gap-1.5">
+                <span className="font-mono text-2xs uppercase tracking-widest text-muted">Arrival</span>
+                <input
+                  type="date"
+                  min={todayStr}
+                  value={checkIn}
+                  onChange={(e) => {
+                    setCheckIn(e.target.value);
+                    if (checkOut && checkOut <= e.target.value) setCheckOut("");
+                  }}
+                  className={field}
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="font-mono text-2xs uppercase tracking-widest text-muted">Departure</span>
+                <input
+                  type="date"
+                  min={checkIn || todayStr}
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  className={field}
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="font-mono text-2xs uppercase tracking-widest text-muted">Guests</span>
+                <select
+                  value={guests}
+                  onChange={(e) => setGuests(Number(e.target.value))}
+                  className={field}
+                >
+                  {Array.from({ length: room.maxGuests }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </label>
+
+              {costBreakdown && (
+                <div className="border-t border-rule pt-4 font-mono text-sm">
+                  <div className="flex justify-between text-muted text-2xs uppercase tracking-widest">
+                    <span>
+                      ${room.pricePerNight} × <span className="tabular">{costBreakdown.nights}</span> night(s)
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline mt-2">
+                    <span className="font-sans text-2xs uppercase tracking-widest text-muted">Total</span>
+                    <span className="font-display text-2xl text-ink tabular">${costBreakdown.total}</span>
+                  </div>
+                </div>
+              )}
+
+              {isConflict && (
+                <p className="font-mono text-2xs uppercase tracking-widest text-stop leading-relaxed">
+                  Room is booked for those dates. Pick another range.
+                </p>
+              )}
+
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full"
+                disabled={isConflict}
+                onClick={handleProceedBooking}
+              >
+                {isConflict ? "Dates unavailable" : "Proceed to booking"}
+              </Button>
+
+              <p className="font-mono text-2xs uppercase tracking-widest text-muted text-center">
+                Instant confirmation · double-booking protected
+              </p>
+            </aside>
           </div>
         )}
       </main>

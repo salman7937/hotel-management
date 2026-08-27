@@ -7,8 +7,11 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { setCredentials } from "../../store/slices/authSlice";
 import { loginApi } from "../../api/authApi";
 import { Button } from "../../components/common/Button";
-import { Badge } from "../../components/common/Badge";
-import { Mail, Lock, ShieldCheck, Hotel, AlertCircle, ArrowLeft } from "lucide-react";
+
+const field =
+  "w-full bg-transparent text-ink border-0 border-b border-rule py-2 text-base " +
+  "focus:outline-none focus:border-b-2 focus:border-pine transition-colors";
+const labelCls = "font-mono text-2xs uppercase tracking-widest text-muted";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -41,10 +44,9 @@ export default function AdminLoginPage() {
       if (response.success && response.data) {
         const userRole = response.data.user?.role;
         if (userRole !== "staff") {
-          setErrorMsg("Access denied. Only Staff accounts can access the Portal.");
+          setErrorMsg("Access denied. Only staff accounts can enter the portal.");
           return;
         }
-
         dispatch(
           setCredentials({
             user: response.data.user,
@@ -63,78 +65,68 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-between text-slate-100">
-      {/* Top Header */}
-      <div className="max-w-7xl w-full mx-auto px-4 py-6">
-        <Link href="/" className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-amber-400">
-          <ArrowLeft className="w-4 h-4" /> Return to Guest Site
+    <div className="min-h-screen bg-paper text-ink flex flex-col">
+      <div className="max-w-5xl w-full mx-auto px-4 py-6">
+        <Link
+          href="/"
+          className="font-mono text-2xs uppercase tracking-widest text-muted hover:text-pine transition-colors"
+        >
+          ← Guest site
         </Link>
       </div>
 
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md glass-panel p-8 rounded-3xl border border-slate-800 space-y-6">
-          <div className="text-center space-y-2">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center mx-auto shadow-lg shadow-amber-600/30">
-              <ShieldCheck className="w-8 h-8 text-slate-950 font-bold" />
-            </div>
-            <Badge variant="gold" size="sm">
-              Staff & Admin Portal
-            </Badge>
-            <h1 className="text-2xl font-extrabold text-white font-outfit">Management Sign In</h1>
-            <p className="text-xs text-slate-400">Sign in with authorized staff credentials.</p>
-          </div>
+      <main className="flex-1 flex items-center px-4 py-12">
+        <div className="w-full max-w-sm mx-auto">
+          <p className="font-mono text-2xs uppercase tracking-[0.2em] text-brass mb-4">
+            Staff &amp; Admin — Protected
+          </p>
+          <h1 className="font-display font-medium text-4xl leading-[0.98] text-ink">
+            Management sign in.
+          </h1>
+          <p className="mt-3 text-sm text-ink-soft">
+            Authorized staff credentials only.
+          </p>
 
           {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{errorMsg}</span>
-            </div>
+            <p className="mt-6 border-l-2 border-stop pl-4 py-2 font-mono text-2xs uppercase tracking-widest text-stop leading-relaxed">
+              {errorMsg}
+            </p>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1 flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5 text-amber-400" /> Staff Email
-              </label>
+          <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-6">
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>Staff email</span>
               <input
                 type="email"
                 required
-                placeholder="admin@grandstay.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                className={field}
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1 flex items-center gap-1">
-                <Lock className="w-3.5 h-3.5 text-amber-400" /> Password
-              </label>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>Password</span>
               <input
                 type="password"
                 required
-                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                className={field}
               />
-            </div>
-
-            <Button variant="gold" size="lg" className="w-full font-bold" disabled={loading}>
-              {loading ? "Authenticating..." : "Sign In to Admin Portal"}
+            </label>
+            <Button type="submit" variant="primary" size="lg" className="w-full" disabled={loading}>
+              {loading ? "Authenticating…" : "Sign in to portal"}
             </Button>
           </form>
 
-          <div className="text-center pt-3 border-t border-slate-800">
-            <p className="text-[11px] text-slate-500">
-              GrandStay Management System v1.0 • Protected Area
-            </p>
-          </div>
+          <p className="mt-6 pt-5 border-t border-rule font-mono text-2xs uppercase tracking-widest text-muted">
+            GrandStay Management System v1.0
+          </p>
         </div>
       </main>
 
-      <footer className="py-6 text-center text-xs text-slate-500">
-        © 2026 GrandStay Hotels Management System. All rights reserved.
+      <footer className="py-6 text-center font-mono text-2xs uppercase tracking-widest text-muted">
+        © {new Date().getFullYear()} GrandStay Hotels
       </footer>
     </div>
   );

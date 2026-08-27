@@ -6,34 +6,27 @@ import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { Navbar } from "../../components/layout/Navbar";
 import { Footer } from "../../components/layout/Footer";
 import { Button } from "../../components/common/Button";
-import { Badge } from "../../components/common/Badge";
 import { useAppSelector } from "../../store/hooks";
 import { getRoomByIdApi } from "../../api/roomApi";
 import { createReservationApi } from "../../api/reservationApi";
 import { createOnlineBookingCheckoutApi } from "../../api/paymentApi";
 import { RoomData } from "../../store/slices/roomsSlice";
-import {
-  Calendar,
-  Users,
-  User,
-  Mail,
-  Phone,
-  MessageSquare,
-  CheckCircle2,
-  AlertCircle,
-  ArrowLeft,
-  ShieldCheck,
-  Sparkles,
-  CreditCard,
-  Banknote,
-} from "lucide-react";
+
+const ROOM_FALLBACK =
+  "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=400&q=80";
+
+const field =
+  "w-full bg-transparent text-ink border-0 border-b border-rule py-2 text-base " +
+  "placeholder-muted focus:outline-none focus:border-b-2 focus:border-pine transition-colors";
+const labelCls = "font-mono text-2xs uppercase tracking-widest text-muted";
+const sectionLabel = "font-mono text-2xs uppercase tracking-[0.2em] text-brass";
 
 export default function BookingCheckoutPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-950">
-          <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+        <div className="min-h-screen flex items-center justify-center bg-paper">
+          <p className="font-mono text-2xs uppercase tracking-widest text-muted">Loading…</p>
         </div>
       }
     >
@@ -56,7 +49,6 @@ function BookingCheckoutContent() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successBooking, setSuccessBooking] = useState<any>(null);
 
-  // Form Fields
   const [guestName, setGuestName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
@@ -97,7 +89,6 @@ function BookingCheckoutContent() {
     fetchRoom();
   }, [roomId]);
 
-  // Calculate nights and total price
   const calculateTotal = () => {
     if (!checkInDate || !checkOutDate || !room) return null;
     const start = new Date(checkInDate);
@@ -107,10 +98,7 @@ function BookingCheckoutContent() {
       1,
       Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
     );
-    return {
-      nights,
-      total: nights * room.pricePerNight,
-    };
+    return { nights, total: nights * room.pricePerNight };
   };
 
   const costBreakdown = calculateTotal();
@@ -123,12 +111,10 @@ function BookingCheckoutContent() {
       setErrorMsg("Please fill in all required guest & booking fields.");
       return;
     }
-
     if (new Date(checkOutDate) <= new Date(checkInDate)) {
-      setErrorMsg("Check-out date must be strictly after Check-in date.");
+      setErrorMsg("Check-out date must be strictly after check-in date.");
       return;
     }
-
     if (checkInDate < todayStr) {
       setErrorMsg("Check-in date cannot be in the past.");
       return;
@@ -137,8 +123,6 @@ function BookingCheckoutContent() {
     setSubmitting(true);
     try {
       if (paymentMethod === "online") {
-        // No reservation is created here — Stripe confirms payment first via webhook,
-        // so an abandoned checkout never blocks the room or leaves a phantom booking.
         const checkoutResponse = await createOnlineBookingCheckoutApi({
           guestName,
           email,
@@ -188,319 +172,266 @@ function BookingCheckoutContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="min-h-screen flex flex-col bg-paper text-ink">
       <Navbar />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Link
           href={roomId ? `/rooms/${roomId}` : "/rooms"}
-          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-amber-400 mb-6 transition-colors"
+          className="font-mono text-2xs uppercase tracking-widest text-muted hover:text-pine transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Room
+          ← Back to room
         </Link>
 
         {searchParams?.get("payment") === "cancelled" && !successBooking && (
-          <div className="max-w-3xl mx-auto mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            Payment was cancelled — nothing was charged and no booking was made. Feel free to try again.
-          </div>
+          <p className="mt-6 border-l-2 border-brass pl-4 py-2 font-mono text-2xs uppercase tracking-widest text-brass leading-relaxed">
+            Payment cancelled — nothing was charged and no booking was made.
+          </p>
         )}
 
-        {/* Successful Booking View */}
         {successBooking ? (
-          <div className="glass-panel p-10 rounded-3xl border border-emerald-500/30 text-center my-6 max-w-2xl mx-auto space-y-6">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
-              <CheckCircle2 className="w-10 h-10" />
-            </div>
-            <div>
-              <Badge variant="gold" size="md" className="mb-2">
-                Booking Confirmed
-              </Badge>
-              <h2 className="text-3xl font-extrabold text-white font-outfit">
-                Reservation #{successBooking.bookingId}
-              </h2>
-              <p className="text-slate-400 text-sm mt-2">
-                Thank you for choosing GrandStay Hotels. A confirmation email is on its way to{" "}
-                <span className="text-amber-400 font-semibold">{successBooking.email}</span>. You can
-                also view full details anytime under{" "}
-                <span className="text-amber-400 font-semibold">My Bookings</span>.
-              </p>
-            </div>
+          /* ---------- Printed confirmation ---------- */
+          <div className="mt-10 max-w-xl border border-rule bg-paper-2 p-8">
+            <p className="font-mono text-2xs uppercase tracking-[0.2em] text-pine">
+              Reservation confirmed
+            </p>
+            <h1 className="mt-2 font-display font-medium text-4xl text-ink tabular">
+              {successBooking.bookingId}
+            </h1>
+            <p className="mt-3 text-sm text-ink-soft leading-relaxed">
+              A confirmation is on its way to{" "}
+              <span className="text-ink">{successBooking.email}</span>. Full details live under
+              My Bookings.
+            </p>
 
-            <div className="p-5 bg-slate-900/80 rounded-2xl border border-slate-800 text-left space-y-3 text-sm">
-              <div className="flex justify-between border-b border-slate-800 pb-2">
-                <span className="text-slate-400">Guest Name:</span>
-                <span className="text-white font-semibold">{successBooking.guestName}</span>
+            <dl className="mt-6 border-t border-rule font-mono text-sm">
+              {[
+                ["Guest", successBooking.guestName],
+                ["Arrival", new Date(successBooking.checkInDate).toLocaleDateString("en-GB")],
+                ["Departure", new Date(successBooking.checkOutDate).toLocaleDateString("en-GB")],
+              ].map(([k, v]) => (
+                <div key={k} className="flex justify-between py-2.5 border-b border-rule">
+                  <dt className="text-2xs uppercase tracking-widest text-muted">{k}</dt>
+                  <dd className="tabular text-ink">{v}</dd>
+                </div>
+              ))}
+              <div className="flex justify-between items-baseline py-3">
+                <dt className="text-2xs uppercase tracking-widest text-muted">Total</dt>
+                <dd className="font-display text-2xl text-ink tabular">
+                  ${successBooking.totalAmount}
+                </dd>
               </div>
-              <div className="flex justify-between border-b border-slate-800 pb-2">
-                <span className="text-slate-400">Check-in:</span>
-                <span className="text-white font-semibold">
-                  {new Date(successBooking.checkInDate).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-slate-800 pb-2">
-                <span className="text-slate-400">Check-out:</span>
-                <span className="text-white font-semibold">
-                  {new Date(successBooking.checkOutDate).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between font-bold pt-1">
-                <span className="text-white">Total Amount:</span>
-                <span className="text-amber-400 text-lg">${successBooking.totalAmount}</span>
-              </div>
-            </div>
+            </dl>
 
-            <div className="flex gap-4 pt-2">
-              <Link href="/my-bookings" className="flex-1">
-                <Button variant="gold" className="w-full">
-                  View My Bookings
-                </Button>
+            <div className="mt-6 flex gap-3">
+              <Link href="/my-bookings">
+                <Button variant="primary" size="sm">View my bookings</Button>
               </Link>
-              <Link href="/rooms" className="flex-1">
-                <Button variant="outline" className="w-full">
-                  Browse More Rooms
-                </Button>
+              <Link href="/rooms">
+                <Button variant="secondary" size="sm">Browse more rooms</Button>
               </Link>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Form Column */}
-            <div className="lg:col-span-2">
-              <div className="glass-panel p-8 rounded-3xl border border-slate-800 space-y-6">
-                <div>
-                  <h1 className="text-3xl font-extrabold font-outfit text-white">Guest Checkout</h1>
-                  <p className="text-slate-400 text-sm">
-                    Enter your details to complete your reservation.
-                  </p>
-                </div>
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-x-12 gap-y-10">
+            {/* ---------- Form ---------- */}
+            <div>
+              <h1 className="font-display font-medium text-4xl leading-[0.98] text-ink">
+                Guest checkout
+              </h1>
+              <p className="mt-3 text-sm text-ink-soft">
+                Enter your details to complete the reservation.
+              </p>
 
-                {errorMsg && (
-                  <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold">Reservation Error</p>
-                      <p>{errorMsg}</p>
-                    </div>
-                  </div>
-                )}
+              {errorMsg && (
+                <p className="mt-6 border-l-2 border-stop pl-4 py-2 font-mono text-2xs uppercase tracking-widest text-stop leading-relaxed">
+                  {errorMsg}
+                </p>
+              )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  {/* Guest Name */}
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-amber-400" /> Full Guest Name *
-                    </label>
+              <form onSubmit={handleSubmit} className="mt-8 flex flex-col">
+                {/* Guest */}
+                <p className={sectionLabel}>Guest</p>
+                <div className="mt-4 pb-8 border-b border-rule grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                  <label className="flex flex-col gap-1.5 sm:col-span-2">
+                    <span className={labelCls}>Full name *</span>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. John Doe"
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                      className={field}
                     />
-                  </div>
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className={labelCls}>Email *</span>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className={field}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className={labelCls}>Phone *</span>
+                    <input
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className={field}
+                    />
+                  </label>
+                </div>
 
-                  {/* Email & Phone */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5 text-amber-400" /> Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        placeholder="john@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-amber-400" /> Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        placeholder="+1-555-0199"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Dates */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-amber-400" /> Check-in Date *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        min={todayStr}
-                        value={checkInDate}
-                        onChange={(e) => {
-                          setCheckInDate(e.target.value);
-                          if (checkOutDate && checkOutDate <= e.target.value) setCheckOutDate("");
-                        }}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-amber-400" /> Check-out Date *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        min={checkInDate || todayStr}
-                        value={checkOutDate}
-                        onChange={(e) => setCheckOutDate(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Guests */}
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-amber-400" /> Number of Guests *
-                    </label>
+                {/* Dates */}
+                <p className={`${sectionLabel} mt-8`}>Dates</p>
+                <div className="mt-4 pb-8 border-b border-rule grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-5">
+                  <label className="flex flex-col gap-1.5">
+                    <span className={labelCls}>Arrival *</span>
+                    <input
+                      type="date"
+                      required
+                      min={todayStr}
+                      value={checkInDate}
+                      onChange={(e) => {
+                        setCheckInDate(e.target.value);
+                        if (checkOutDate && checkOutDate <= e.target.value) setCheckOutDate("");
+                      }}
+                      className={field}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className={labelCls}>Departure *</span>
+                    <input
+                      type="date"
+                      required
+                      min={checkInDate || todayStr}
+                      value={checkOutDate}
+                      onChange={(e) => setCheckOutDate(e.target.value)}
+                      className={field}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className={labelCls}>Guests *</span>
                     <select
                       value={numberOfGuests}
                       onChange={(e) => setNumberOfGuests(Number(e.target.value))}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                      className={field}
                     >
                       {Array.from({ length: room?.maxGuests || 1 }, (_, i) => i + 1).map((num) => (
-                        <option key={num} value={num}>
-                          {num} Guest{num > 1 ? "s" : ""}
-                        </option>
+                        <option key={num} value={num}>{num}</option>
                       ))}
                     </select>
-                    {room && (
-                      <p className="text-[11px] text-slate-500 mt-1.5">
-                        This room accommodates up to {room.maxGuests} guest{room.maxGuests > 1 ? "s" : ""}.
+                  </label>
+                </div>
+
+                {/* Requests */}
+                <p className={`${sectionLabel} mt-8`}>Requests</p>
+                <label className="mt-4 pb-8 border-b border-rule flex flex-col gap-1.5">
+                  <span className={labelCls}>Special requests (optional)</span>
+                  <textarea
+                    rows={3}
+                    placeholder="Early check-in, high floor…"
+                    value={specialRequests}
+                    onChange={(e) => setSpecialRequests(e.target.value)}
+                    className={`${field} resize-none`}
+                  />
+                </label>
+
+                {/* Payment */}
+                <p className={`${sectionLabel} mt-8`}>Payment</p>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {([
+                    ["cash", "Pay at hotel", "Cash on arrival"],
+                    ["online", "Pay online", "Card via Stripe"],
+                  ] as const).map(([value, title, sub]) => {
+                    const active = paymentMethod === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setPaymentMethod(value)}
+                        className={`text-left p-4 border transition-colors ${
+                          active
+                            ? "border-pine text-pine bg-paper-2"
+                            : "border-rule text-ink-soft hover:border-muted"
+                        }`}
+                      >
+                        <p className="font-mono text-2xs uppercase tracking-widest">{title}</p>
+                        <p className="text-2xs text-muted mt-1">{sub}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  className="w-full mt-8"
+                  disabled={submitting}
+                >
+                  {submitting
+                    ? paymentMethod === "online"
+                      ? "Redirecting…"
+                      : "Processing…"
+                    : paymentMethod === "online"
+                    ? "Proceed to payment"
+                    : "Confirm & book"}
+                </Button>
+              </form>
+            </div>
+
+            {/* ---------- Receipt ---------- */}
+            <aside className="lg:sticky lg:top-20 self-start border border-rule bg-paper-2 p-6">
+              <p className={sectionLabel}>Summary</p>
+
+              {loadingRoom || !room ? (
+                <p className="mt-4 font-mono text-2xs uppercase tracking-widest text-muted">
+                  Loading…
+                </p>
+              ) : (
+                <div className="mt-4 flex flex-col gap-4">
+                  <div className="flex gap-3">
+                    <img
+                      src={room.images?.[0] || ROOM_FALLBACK}
+                      alt={`Room ${room.roomNumber}`}
+                      className="w-16 h-16 object-cover border border-rule"
+                    />
+                    <div className="font-mono text-2xs uppercase tracking-widest text-muted">
+                      <p className="tabular">№ {room.roomNumber}</p>
+                      <p className="text-ink mt-1">{room.roomType}</p>
+                      <p className="mt-1 tabular">${room.pricePerNight}/night</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-rule pt-4 font-mono text-2xs">
+                    {costBreakdown ? (
+                      <>
+                        <div className="flex justify-between text-muted uppercase tracking-widest">
+                          <span>
+                            ${room.pricePerNight} × <span className="tabular">{costBreakdown.nights}</span>
+                          </span>
+                          <span className="tabular text-ink-soft">${costBreakdown.total}</span>
+                        </div>
+                        <div className="flex justify-between items-baseline mt-3 pt-3 border-t border-rule">
+                          <span className="uppercase tracking-widest text-muted">Total</span>
+                          <span className="font-display text-2xl text-ink tabular">
+                            ${costBreakdown.total}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="uppercase tracking-widest text-brass">
+                        Select valid dates for a total.
                       </p>
                     )}
                   </div>
-
-                  {/* Special Requests */}
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-                      <MessageSquare className="w-3.5 h-3.5 text-amber-400" /> Special Requests (Optional)
-                    </label>
-                    <textarea
-                      rows={3}
-                      placeholder="e.g. Early check-in, high floor preference..."
-                      value={specialRequests}
-                      onChange={(e) => setSpecialRequests(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-
-                  {/* Payment Method */}
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
-                      <CreditCard className="w-3.5 h-3.5 text-amber-400" /> Payment Method *
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("cash")}
-                        className={`flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${
-                          paymentMethod === "cash"
-                            ? "bg-amber-500/10 border-amber-500/50 text-amber-400"
-                            : "bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700"
-                        }`}
-                      >
-                        <Banknote className="w-5 h-5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-bold">Pay at Hotel</p>
-                          <p className="text-[11px] opacity-80">Cash on arrival</p>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("online")}
-                        className={`flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${
-                          paymentMethod === "online"
-                            ? "bg-amber-500/10 border-amber-500/50 text-amber-400"
-                            : "bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700"
-                        }`}
-                      >
-                        <CreditCard className="w-5 h-5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-bold">Pay Online</p>
-                          <p className="text-[11px] opacity-80">Card via Stripe</p>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  <Button variant="gold" size="lg" className="w-full font-bold" disabled={submitting}>
-                    {submitting
-                      ? paymentMethod === "online"
-                        ? "Redirecting to Payment..."
-                        : "Processing Reservation..."
-                      : paymentMethod === "online"
-                      ? "Proceed to Payment"
-                      : "Confirm & Book Now"}
-                  </Button>
-                </form>
-              </div>
-            </div>
-
-            {/* Summary Column */}
-            <div className="lg:col-span-1">
-              <div className="glass-panel p-6 rounded-3xl border border-slate-800 sticky top-28 space-y-6">
-                <h3 className="font-bold text-white text-lg font-outfit pb-3 border-b border-slate-800">
-                  Reservation Summary
-                </h3>
-
-                {loadingRoom || !room ? (
-                  <p className="text-slate-400 text-sm">Loading summary...</p>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex gap-3">
-                      <img
-                        src={room.images[0] || "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=400&q=80"}
-                        alt={room.roomNumber}
-                        className="w-20 h-20 rounded-xl object-cover border border-slate-800"
-                      />
-                      <div>
-                        <Badge variant="gold" size="sm" className="mb-1">
-                          Room {room.roomNumber}
-                        </Badge>
-                        <h4 className="font-bold text-white text-sm">{room.roomType} Room</h4>
-                        <p className="text-xs text-amber-400 font-bold mt-1">${room.pricePerNight} / night</p>
-                      </div>
-                    </div>
-
-                    {costBreakdown ? (
-                      <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2 text-sm">
-                        <div className="flex justify-between text-slate-400 text-xs">
-                          <span>Rate per Night:</span>
-                          <span>${room.pricePerNight}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-400 text-xs">
-                          <span>Total Stay Duration:</span>
-                          <span>{costBreakdown.nights} Night(s)</span>
-                        </div>
-                        <div className="pt-2 border-t border-slate-800 flex justify-between font-bold text-white text-base">
-                          <span>Total Amount:</span>
-                          <span className="text-amber-400">${costBreakdown.total}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-amber-400">Please select valid Check-in & Check-out dates.</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+                </div>
+              )}
+            </aside>
           </div>
         )}
       </main>

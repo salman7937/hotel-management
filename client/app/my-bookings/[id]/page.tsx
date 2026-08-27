@@ -9,29 +9,17 @@ import { Badge } from "../../components/common/Badge";
 import { Button } from "../../components/common/Button";
 import { getReservationByIdApi, cancelMyBookingApi } from "../../api/reservationApi";
 import { ReservationData } from "../../store/slices/reservationsSlice";
-import {
-  ArrowLeft,
-  BedDouble,
-  Calendar,
-  Users,
-  User,
-  Mail,
-  Phone,
-  MessageSquare,
-  DollarSign,
-  Info,
-  CreditCard,
-  Banknote,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react";
+
+const row = "flex justify-between gap-4 py-2.5 border-b border-rule";
+const key = "font-mono text-2xs uppercase tracking-widest text-muted";
+const val = "font-mono text-sm text-ink text-right";
 
 export default function BookingDetailPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-950">
-          <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+        <div className="min-h-screen flex items-center justify-center bg-paper">
+          <p className="font-mono text-2xs uppercase tracking-widest text-muted">Loading…</p>
         </div>
       }
     >
@@ -54,7 +42,7 @@ function BookingDetailContent() {
 
   const handleCancel = async () => {
     if (!booking) return;
-    if (!window.confirm("Are you sure you want to cancel this booking? This cannot be undone.")) return;
+    if (!window.confirm("Cancel this booking? This cannot be undone.")) return;
     setCancelling(true);
     setCancelError(null);
     try {
@@ -94,49 +82,48 @@ function BookingDetailContent() {
   const roomObj = booking && typeof booking.room === "object" ? booking.room : null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="min-h-screen flex flex-col bg-paper text-ink">
       <Navbar />
 
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Link
           href="/my-bookings"
-          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-amber-400 mb-6 transition-colors"
+          className="font-mono text-2xs uppercase tracking-widest text-muted hover:text-pine transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to My Bookings
+          ← My bookings
         </Link>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mb-4" />
-            <p className="text-slate-400 text-sm">Loading booking details...</p>
-          </div>
+          <p className="mt-16 font-mono text-2xs uppercase tracking-widest text-muted">Loading…</p>
         ) : error || !booking ? (
-          <div className="glass-panel p-10 rounded-3xl border border-rose-900/50 text-center space-y-3">
-            <Info className="w-10 h-10 text-rose-400 mx-auto" />
-            <p className="text-rose-400 font-semibold">{error || "Reservation not found."}</p>
+          <div className="mt-16">
+            <h1 className="font-display font-medium text-3xl text-stop">
+              {error || "Reservation not found."}
+            </h1>
           </div>
         ) : (
-          <div className="glass-panel p-8 rounded-3xl border border-slate-800 space-y-6">
+          <div className="mt-8 border border-rule bg-paper-2 p-8">
             {paymentResult === "success" && (
-              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                Payment successful! Your reservation is now confirmed.
-              </div>
+              <p className="mb-6 border-l-2 border-pine pl-4 py-2 font-mono text-2xs uppercase tracking-widest text-pine">
+                Payment successful — reservation confirmed.
+              </p>
             )}
             {paymentResult === "cancelled" && (
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm flex items-center gap-2">
-                <XCircle className="w-4 h-4 flex-shrink-0" />
-                Payment was not completed. Your reservation is still held as unpaid — you can try again anytime.
-              </div>
+              <p className="mb-6 border-l-2 border-brass pl-4 py-2 font-mono text-2xs uppercase tracking-widest text-brass leading-relaxed">
+                Payment not completed — reservation still held as unpaid. Try again anytime.
+              </p>
             )}
 
-            <div className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-slate-800">
+            <div className="flex items-start justify-between gap-4 pb-5 border-b border-rule">
               <div>
-                <h1 className="text-2xl font-extrabold text-white font-outfit">
-                  Reservation #{booking.bookingId}
+                <p className="font-mono text-2xs uppercase tracking-[0.2em] text-brass">
+                  Reservation
+                </p>
+                <h1 className="mt-1 font-display font-medium text-4xl text-ink tabular">
+                  {booking.bookingId}
                 </h1>
-                <p className="text-slate-400 text-sm">
-                  Created on {new Date(booking.createdAt).toLocaleDateString()}
+                <p className="mt-1 font-mono text-2xs uppercase tracking-widest text-muted tabular">
+                  Booked {new Date(booking.createdAt).toLocaleDateString("en-GB")}
                 </p>
               </div>
               <Badge variant={booking.status} size="md">
@@ -144,121 +131,78 @@ function BookingDetailContent() {
               </Badge>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                  <BedDouble className="w-3.5 h-3.5" /> Room
-                </p>
-                <p className="text-sm font-semibold text-white">
-                  {roomObj ? `${roomObj.roomType} Room (${roomObj.roomNumber})` : "N/A"}
-                </p>
+            <dl className="mt-5 border-t border-rule">
+              <div className={row}>
+                <dt className={key}>Room</dt>
+                <dd className={val}>
+                  {roomObj ? `${roomObj.roomType} · № ${roomObj.roomNumber}` : "—"}
+                </dd>
               </div>
-
-              <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5" /> Number of Guests
-                </p>
-                <p className="text-sm font-semibold text-white">{booking.numberOfGuests}</p>
+              <div className={row}>
+                <dt className={key}>Guests</dt>
+                <dd className={`${val} tabular`}>{booking.numberOfGuests}</dd>
               </div>
-
-              <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" /> Check-in
-                </p>
-                <p className="text-sm font-semibold text-white">
-                  {new Date(booking.checkInDate).toLocaleDateString()}
-                </p>
+              <div className={row}>
+                <dt className={key}>Arrival</dt>
+                <dd className={`${val} tabular`}>
+                  {new Date(booking.checkInDate).toLocaleDateString("en-GB")}
+                </dd>
               </div>
-
-              <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" /> Check-out
-                </p>
-                <p className="text-sm font-semibold text-white">
-                  {new Date(booking.checkOutDate).toLocaleDateString()}
-                </p>
+              <div className={row}>
+                <dt className={key}>Departure</dt>
+                <dd className={`${val} tabular`}>
+                  {new Date(booking.checkOutDate).toLocaleDateString("en-GB")}
+                </dd>
               </div>
-
-              <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" /> Guest Name
-                </p>
-                <p className="text-sm font-semibold text-white">{booking.guestName}</p>
+              <div className={row}>
+                <dt className={key}>Guest name</dt>
+                <dd className={val}>{booking.guestName}</dd>
               </div>
-
-              <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5" /> Total Amount
-                </p>
-                <p className="text-sm font-extrabold text-amber-400">${booking.totalAmount}</p>
+              <div className={row}>
+                <dt className={key}>Email</dt>
+                <dd className={val}>{booking.email}</dd>
               </div>
-
-              <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" /> Email
-                </p>
-                <p className="text-sm font-semibold text-white">{booking.email}</p>
+              <div className={row}>
+                <dt className={key}>Phone</dt>
+                <dd className={`${val} tabular`}>{booking.phone}</dd>
               </div>
-
-              <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5" /> Phone
-                </p>
-                <p className="text-sm font-semibold text-white">{booking.phone}</p>
-              </div>
-
-              <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                  {booking.paymentMethod === "online" ? (
-                    <CreditCard className="w-3.5 h-3.5" />
-                  ) : (
-                    <Banknote className="w-3.5 h-3.5" />
-                  )}
-                  Payment
-                </p>
-                <p className="text-sm font-semibold text-white">
-                  {booking.paymentMethod === "online" ? "Paid Online" : "Pay at Hotel"}
+              <div className={row}>
+                <dt className={key}>Payment</dt>
+                <dd className={val}>
+                  {booking.paymentMethod === "online" ? "Online" : "At hotel"}
                   {" · "}
-                  <span className={booking.paymentStatus === "paid" ? "text-emerald-400" : "text-amber-400"}>
+                  <span className={booking.paymentStatus === "paid" ? "text-pine" : "text-brass"}>
                     {booking.paymentStatus === "paid" ? "Paid" : "Unpaid"}
                   </span>
-                </p>
+                </dd>
               </div>
-            </div>
-
-            {booking.specialRequests && (
-              <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5" /> Special Requests
-                </p>
-                <p className="text-sm text-slate-300">{booking.specialRequests}</p>
+              {booking.specialRequests && (
+                <div className={row}>
+                  <dt className={key}>Requests</dt>
+                  <dd className={`${val} font-sans max-w-xs`}>{booking.specialRequests}</dd>
+                </div>
+              )}
+              <div className="flex justify-between items-baseline py-4">
+                <dt className={key}>Total</dt>
+                <dd className="font-display text-3xl text-ink tabular">${booking.totalAmount}</dd>
               </div>
-            )}
+            </dl>
 
             {(booking.status === "Pending" || booking.status === "Confirmed") && (
-              <div className="pt-2 space-y-2">
+              <div className="mt-4 pt-5 border-t border-rule flex flex-col gap-2">
                 {cancelError && (
-                  <p className="text-rose-400 text-sm text-center">{cancelError}</p>
+                  <p className="font-mono text-2xs uppercase tracking-widest text-stop">
+                    {cancelError}
+                  </p>
                 )}
-                <Button
-                  variant="outline"
-                  className="w-full border-rose-500/40 text-rose-400 hover:bg-rose-500/10"
-                  onClick={handleCancel}
-                  disabled={cancelling}
-                >
-                  {cancelling ? "Cancelling..." : "Cancel This Booking"}
+                <Button variant="danger" onClick={handleCancel} disabled={cancelling}>
+                  {cancelling ? "Cancelling…" : "Cancel this booking"}
                 </Button>
-                <p className="text-[11px] text-slate-500 text-center">
-                  Free cancellation while the booking is pending or confirmed. Contact the front desk for later changes.
+                <p className="font-mono text-2xs uppercase tracking-widest text-muted leading-relaxed">
+                  Free while pending or confirmed. Contact the front desk for later changes.
                 </p>
               </div>
             )}
-
-            <Link href="/my-bookings">
-              <Button variant="outline" className="w-full">
-                Back to My Bookings
-              </Button>
-            </Link>
           </div>
         )}
       </main>

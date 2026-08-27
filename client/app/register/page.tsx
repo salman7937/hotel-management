@@ -9,7 +9,11 @@ import { Button } from "../components/common/Button";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setCredentials } from "../store/slices/authSlice";
 import { registerApi } from "../api/authApi";
-import { User, Mail, Phone, Lock, Hotel, AlertCircle } from "lucide-react";
+
+const field =
+  "w-full bg-transparent text-ink border-0 border-b border-rule py-2 text-base " +
+  "focus:outline-none focus:border-b-2 focus:border-pine transition-colors";
+const labelCls = "font-mono text-2xs uppercase tracking-widest text-muted";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -37,7 +41,6 @@ export default function RegisterPage() {
       setErrorMsg("Please fill in all required fields.");
       return;
     }
-
     if (password.length < 6) {
       setErrorMsg("Password must be at least 6 characters long.");
       return;
@@ -58,104 +61,85 @@ export default function RegisterPage() {
         setErrorMsg(response.message || "Registration failed.");
       }
     } catch (err: any) {
-      setErrorMsg(
-        err.response?.data?.message || "An error occurred during registration."
-      );
+      setErrorMsg(err.response?.data?.message || "An error occurred during registration.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="min-h-screen flex flex-col bg-paper text-ink">
       <Navbar />
 
-      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md glass-panel p-8 rounded-3xl border border-slate-800 space-y-6">
-          <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center mx-auto shadow-lg shadow-amber-600/30">
-              <Hotel className="w-7 h-7 text-slate-950 font-bold" />
-            </div>
-            <h1 className="text-2xl font-extrabold text-white font-outfit">Create Account</h1>
-            <p className="text-xs text-slate-400">Join GrandStay Hotels for seamless reservations & perks.</p>
-          </div>
+      <main className="flex-1 flex items-center py-16 px-4">
+        <div className="w-full max-w-sm mx-auto">
+          <p className="font-mono text-2xs uppercase tracking-[0.2em] text-brass mb-4">
+            New Guest
+          </p>
+          <h1 className="font-display font-medium text-4xl leading-[0.98] text-ink">
+            Create an account.
+          </h1>
+          <p className="mt-3 text-sm text-ink-soft">
+            One account for every stay, and your bookings in one place.
+          </p>
 
           {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
+            <p className="mt-6 border-l-2 border-stop pl-4 py-2 font-mono text-2xs uppercase tracking-widest text-stop leading-relaxed">
+              {errorMsg}
+            </p>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1 flex items-center gap-1">
-                <User className="w-3.5 h-3.5 text-amber-400" /> Full Name *
-              </label>
+          <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-6">
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>Full name *</span>
               <input
                 type="text"
                 required
-                placeholder="John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                className={field}
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1 flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5 text-amber-400" /> Email Address *
-              </label>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>Email *</span>
               <input
                 type="email"
                 required
-                placeholder="john@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                className={field}
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1 flex items-center gap-1">
-                <Phone className="w-3.5 h-3.5 text-amber-400" /> Phone Number
-              </label>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>Phone</span>
               <input
                 type="tel"
-                placeholder="+1-555-0199"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                className={field}
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1 flex items-center gap-1">
-                <Lock className="w-3.5 h-3.5 text-amber-400" /> Password *
-              </label>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={labelCls}>Password * <span className="text-muted">(min 6)</span></span>
               <input
                 type="password"
                 required
-                placeholder="At least 6 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                className={field}
               />
-            </div>
-
-            <Button variant="gold" size="lg" className="w-full font-bold" disabled={loading}>
-              {loading ? "Creating Account..." : "Register Account"}
+            </label>
+            <Button type="submit" variant="primary" size="lg" className="w-full" disabled={loading}>
+              {loading ? "Creating…" : "Create account"}
             </Button>
           </form>
 
-          <div className="text-center pt-2 border-t border-slate-800">
-            <p className="text-xs text-slate-400">
-              Already have an account?{" "}
-              <Link href="/login" className="text-amber-400 font-semibold hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </div>
+          <p className="mt-6 pt-5 border-t border-rule font-mono text-2xs uppercase tracking-widest text-muted">
+            Have an account?{" "}
+            <Link href="/login" className="text-pine border-b border-pine pb-0.5">
+              Sign in
+            </Link>
+          </p>
         </div>
       </main>
 
