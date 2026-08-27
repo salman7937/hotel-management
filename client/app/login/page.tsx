@@ -1,29 +1,39 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Navbar } from "../components/layout/Navbar";
 import { Footer } from "../components/layout/Footer";
 import { Button } from "../components/common/Button";
 import { Badge } from "../components/common/Badge";
-import { useAppDispatch } from "../store/hooks";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setCredentials } from "../store/slices/authSlice";
 import { loginApi } from "../api/authApi";
-import { Mail, Lock, Hotel, AlertCircle, ArrowRight } from "lucide-react";
+import { Mail, Lock, Hotel, AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { isAuthenticated, user, isLoading } = useAppSelector((state) => state.auth);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [staffRedirect, setStaffRedirect] = useState(false);
+
+  // Already signed in — don't show the form again.
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      router.replace(user.role === "staff" ? "/admin/dashboard" : "/rooms");
+    }
+  }, [isLoading, isAuthenticated, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setStaffRedirect(false);
 
     if (!email || !password) {
       setErrorMsg("Please provide both email and password.");
@@ -34,6 +44,14 @@ export default function LoginPage() {
     try {
       const response = await loginApi({ email, password });
       if (response.success && response.data) {
+        if (response.data.user?.role === "staff") {
+          // Staff accounts belong to the Admin Portal, not the guest login.
+          setErrorMsg(
+            "This is a staff account. Please sign in through the Admin Portal."
+          );
+          setStaffRedirect(true);
+          return;
+        }
         dispatch(
           setCredentials({
             user: response.data.user,
@@ -66,9 +84,19 @@ export default function LoginPage() {
           </div>
 
           {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{errorMsg}</span>
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+              {staffRedirect && (
+                <Link
+                  href="/admin/login"
+                  className="inline-flex items-center gap-1.5 self-start font-semibold text-amber-400 hover:underline"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" /> Go to Admin Portal login
+                </Link>
+              )}
             </div>
           )}
 

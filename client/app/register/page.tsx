@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Navbar } from "../components/layout/Navbar";
 import { Footer } from "../components/layout/Footer";
 import { Button } from "../components/common/Button";
-import { useAppDispatch } from "../store/hooks";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setCredentials } from "../store/slices/authSlice";
 import { registerApi } from "../api/authApi";
 import { User, Mail, Phone, Lock, Hotel, AlertCircle } from "lucide-react";
@@ -14,6 +14,13 @@ import { User, Mail, Phone, Lock, Hotel, AlertCircle } from "lucide-react";
 export default function RegisterPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { isAuthenticated, user, isLoading } = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      router.replace(user.role === "staff" ? "/admin/dashboard" : "/rooms");
+    }
+  }, [isLoading, isAuthenticated, user, router]);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

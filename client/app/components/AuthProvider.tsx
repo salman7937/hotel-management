@@ -29,8 +29,15 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             return;
           }
         }
-      } catch (err) {
-        // Access token in localStorage failed or expired, proceed to cookie refresh
+      } catch (err: any) {
+        // A network/server error (no HTTP response) is not proof the session is
+        // invalid — keep the stored token and let the user retry instead of
+        // silently logging them out.
+        if (token && !err?.response) {
+          dispatch(setLoading(false));
+          return;
+        }
+        // Otherwise the access token failed/expired — fall through to cookie refresh.
       }
 
       // Silent cookie refresh check (for tab closes or expired access tokens)
